@@ -61,7 +61,7 @@ export async function consumeFromQueue(): Promise<void> {
         const currentTime: number = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
 
         console.log(
-          '\nDate:', currentDate,
+          'Date:', currentDate,
           '\nWeekday:', currentDay,
           '\nTime:', currentTime, '\n'
         );

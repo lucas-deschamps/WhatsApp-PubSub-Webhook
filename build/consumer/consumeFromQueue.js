@@ -33,7 +33,7 @@ export async function consumeFromQueue() {
                 const currentMinute = currentNow.minute;
                 const currentHour = currentNow.hour;
                 const currentTime = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
-                console.log('\nDate:', currentDate, '\nWeekday:', currentDay, '\nTime:', currentTime, '\n');
+                console.log('Date:', currentDate, '\nWeekday:', currentDay, '\nTime:', currentTime, '\n');
                 /* DOM – 08h às 18h00 */
                 if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00) && message) {
                     console.log('Time to fire HSM:\n');
