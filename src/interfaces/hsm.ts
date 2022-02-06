@@ -8,7 +8,7 @@ interface Contato {
 }
 
 export interface IQualifiedHSM {
-  cod_cont: number,
+  cod_conta: number,
   hsm: number,
   cod_flow: number,
   tipo_envio: number,

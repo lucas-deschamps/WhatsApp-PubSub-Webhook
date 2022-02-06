@@ -6,6 +6,7 @@ import { hsmEndpoint } from '../config/endpoints';
 import { amqpServer } from '../config/connections';
 
 import { ILead } from '../interfaces/lead';
+import { IQualifiedHSM } from '../interfaces/hsm';
 
 export async function consumeFromQueue(): Promise<void> {
   try {
@@ -16,7 +17,7 @@ export async function consumeFromQueue(): Promise<void> {
       
     channel.consume('AV', message => {
       try {
-	      const lead: ILead = JSON.parse(message!.content.toString('utf8'));
+	      const lead: ILead = message && JSON.parse(message.content.toString('utf8'));
 
         const {
           idlead,
@@ -65,15 +66,49 @@ export async function consumeFromQueue(): Promise<void> {
           if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00)) {
             console.log('Time to fire HSM:\n');
             console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+
+            const qualifiedHsmBody: IQualifiedHSM = {
+              "cod_conta": 6,
+              "hsm": 13,
+              "cod_flow": 62,
+              "tipo_envio": 1,
+              "variaveis": {
+                "1": `${hsmName}` || 'nome',
+              },
+              "contato": {
+                "nome": `${hsmName}` || 'nome',
+                "telefone": `${hsmPhoneNumber}` || '5548999476359',
+              },
+              "start_flow": 1
+            };
+
+            console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
           };
 
           // SEG a SAB – 08h às 20h40
-          if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 20.40)) {
+          if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 22.40)) {
             console.log('Time to fire HSM:\n');
             console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+
+            const qualifiedHsmBody: IQualifiedHSM = {
+              "cod_conta": 6,
+              "hsm": 13,
+              "cod_flow": 62,
+              "tipo_envio": 1,
+              "variaveis": {
+                "1": `${hsmName}` || 'nome',
+              },
+              "contato": {
+                "nome": `${hsmName}` || 'nome',
+                "telefone": `${hsmPhoneNumber}` || '5548999476359',
+              },
+              "start_flow": 1
+            };
+
+            console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
           };
 
-        }, 60000);
+        }, 6000);
         
         //channel.ack(lead);
       } catch (err) {
