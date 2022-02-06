@@ -27,90 +27,91 @@ export async function consumeFromQueue() {
                 console.log('Plus 5 days:', leadDatePlusFive, '\n');
                 console.log('Lead info finished.\n');
                 // periodical check on whether it's been 5 days since the new lead was registered
-                setInterval(async () => {
-                    const currentNow = DateTime.now().setZone('America/Sao_Paulo');
-                    const currentDate = currentNow.toISO();
-                    const currentDay = currentNow.weekday;
-                    const currentMinute = currentNow.minute;
-                    const currentHour = currentNow.hour;
-                    const currentTime = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
-                    // DOM – 08h às 18h00
-                    if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00)) {
-                        console.log('Time to fire HSM:\n');
-                        console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
-                        const qualifiedHsmBody = {
-                            "cod_conta": 6,
-                            "hsm": 13,
-                            "cod_flow": 62,
-                            "tipo_envio": 1,
-                            "variaveis": {
-                                "1": `${hsmName}` || 'nome',
-                            },
-                            "contato": {
-                                "nome": `${hsmName}` || 'nome',
-                                "telefone": `${hsmPhoneNumber}` || '5548999476359',
-                            },
-                            "start_flow": 1
-                        };
-                        console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
-                        const fetchOptions = {
-                            method: 'POST',
-                            body: JSON.stringify(qualifiedHsmBody),
-                            headers: {
-                                'Authorization': process.env.AUTH_TOKEN,
-                                'Content-Type': 'application/json',
-                            },
-                        };
-                        try {
-                            const post = await fetch(hsmEndpoint, fetchOptions);
-                            const response = await post.json();
-                            console.log('\nRES:', response);
-                            channel.ack(message);
-                        }
-                        catch (err) {
-                            console.error(err);
-                        }
+                const currentNow = DateTime.now().setZone('America/Sao_Paulo');
+                const currentDate = currentNow.toISO();
+                const currentDay = currentNow.weekday;
+                const currentMinute = currentNow.minute;
+                const currentHour = currentNow.hour;
+                const currentTime = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
+                console.log('\nDate:', currentDate, '\nWeekday:', currentDay, '\nTime:', currentTime, '\n');
+                /* DOM – 08h às 18h00 */
+                if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00) && message) {
+                    console.log('Time to fire HSM:\n');
+                    console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+                    const qualifiedHsmBody = {
+                        "cod_conta": 6,
+                        "hsm": 13,
+                        "cod_flow": 62,
+                        "tipo_envio": 1,
+                        "variaveis": {
+                            "1": `${hsmName}` || 'nome',
+                        },
+                        "contato": {
+                            "nome": `${hsmName}` || 'nome',
+                            "telefone": `${hsmPhoneNumber}` || '5548999476359',
+                        },
+                        "start_flow": 1
+                    };
+                    console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
+                    const fetchOptions = {
+                        method: 'POST',
+                        body: JSON.stringify(qualifiedHsmBody),
+                        headers: {
+                            'Authorization': process.env.AUTH_TOKEN,
+                            'Content-Type': 'application/json',
+                        },
+                    };
+                    try {
+                        const post = await fetch(hsmEndpoint, fetchOptions);
+                        const response = await post.json();
+                        console.log('\nRES:', response);
+                        channel.ack(message);
+                        message = null;
                     }
-                    ; // end of sunday if
-                    // SEG a SAB – 08h às 20h40
-                    if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 20.40)) {
-                        console.log('Time to fire HSM:\n');
-                        console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
-                        const qualifiedHsmBody = {
-                            "cod_conta": 6,
-                            "hsm": 13,
-                            "cod_flow": 62,
-                            "tipo_envio": 1,
-                            "variaveis": {
-                                "1": `${hsmName}` || 'nome',
-                            },
-                            "contato": {
-                                "nome": `${hsmName}` || 'nome',
-                                "telefone": `${hsmPhoneNumber}` || '5548999476359',
-                            },
-                            "start_flow": 1
-                        };
-                        console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
-                        const fetchOptions = {
-                            method: 'POST',
-                            body: JSON.stringify(qualifiedHsmBody),
-                            headers: {
-                                'Authorization': process.env.AUTH_TOKEN,
-                                'Content-Type': 'application/json',
-                            },
-                        };
-                        try {
-                            const post = await fetch(hsmEndpoint, fetchOptions);
-                            const response = await post.json();
-                            console.log('\nRES:', response);
-                            channel.ack(message);
-                        }
-                        catch (err) {
-                            console.error(err);
-                        }
+                    catch (err) {
+                        console.error(err);
                     }
-                    ; // end of weekday + saturday if
-                }, 70000); // end of setInterval
+                }
+                ; // end of sunday if
+                /* SEG a SAB – 08h às 20h40 */
+                if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 20.40) && message) {
+                    console.log('Time to fire HSM:\n');
+                    console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+                    const qualifiedHsmBody = {
+                        "cod_conta": 6,
+                        "hsm": 13,
+                        "cod_flow": 62,
+                        "tipo_envio": 1,
+                        "variaveis": {
+                            "1": `${hsmName}` || 'nome',
+                        },
+                        "contato": {
+                            "nome": `${hsmName}` || 'nome',
+                            "telefone": `${hsmPhoneNumber}` || '5548999476359',
+                        },
+                        "start_flow": 1
+                    };
+                    console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
+                    const fetchOptions = {
+                        method: 'POST',
+                        body: JSON.stringify(qualifiedHsmBody),
+                        headers: {
+                            'Authorization': process.env.AUTH_TOKEN,
+                            'Content-Type': 'application/json',
+                        },
+                    };
+                    try {
+                        const post = await fetch(hsmEndpoint, fetchOptions);
+                        const response = await post.json();
+                        console.log('\nRES:', response);
+                        channel.ack(message);
+                        message = null;
+                    }
+                    catch (err) {
+                        console.error(err);
+                    }
+                }
+                ; // end of weekday + saturday if
             }
             catch (err) {
                 console.error(err);
@@ -123,11 +124,3 @@ export async function consumeFromQueue() {
     }
 }
 ; // end of main function consumeFromQueue
-/*
-  For logging purposes:
-    console.log(
-                '\nDate:', currentDate,
-                '\nWeekday:', currentDay,
-                '\nTime:', currentTime, '\n'
-    );
-*/

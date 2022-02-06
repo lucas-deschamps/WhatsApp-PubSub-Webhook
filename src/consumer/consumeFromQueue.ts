@@ -16,7 +16,7 @@ export async function consumeFromQueue(): Promise<void> {
   try {
     const connection = await amqp.connect(amqpServer);
     const channel = await connection.createChannel();
-      
+    
     await channel.assertQueue('AV');
     
     channel.consume('AV', async (message) => {
@@ -51,105 +51,113 @@ export async function consumeFromQueue(): Promise<void> {
         console.log('Lead info finished.\n');
 
         // periodical check on whether it's been 5 days since the new lead was registered
-        setInterval(async () => {
-          const currentNow = DateTime.now().setZone('America/Sao_Paulo');
+        const currentNow = DateTime.now().setZone('America/Sao_Paulo');
 
-          const currentDate = currentNow.toISO();
-          const currentDay = currentNow.weekday;
-          const currentMinute = currentNow.minute;
-          const currentHour = currentNow.hour;
+        const currentDate = currentNow.toISO();
+        const currentDay = currentNow.weekday;
+        const currentMinute = currentNow.minute;
+        const currentHour = currentNow.hour;
+        
+        const currentTime: number = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
+
+        console.log(
+          '\nDate:', currentDate,
+          '\nWeekday:', currentDay,
+          '\nTime:', currentTime, '\n'
+        );
+
+        /* DOM – 08h às 18h00 */
+        if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00) && message) {
+          console.log('Time to fire HSM:\n');
+          console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+
+          const qualifiedHsmBody: IQualifiedHSM = {
+            "cod_conta": 6,
+            "hsm": 13,
+            "cod_flow": 62,
+            "tipo_envio": 1,
+            "variaveis": {
+              "1": `${hsmName}` || 'nome',
+            },
+            "contato": {
+              "nome": `${hsmName}` || 'nome',
+              "telefone": `${hsmPhoneNumber}` || '5548999476359',
+            },
+            "start_flow": 1
+          };
+
+          console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
+
+          const fetchOptions: RequestInit = {
+            method: 'POST',
+            body: JSON.stringify(qualifiedHsmBody),
+            headers: {
+              'Authorization': process.env.AUTH_TOKEN as string,
+              'Content-Type': 'application/json',
+            },
+          };
+
+          try {
+            const post: FetchResponse = await fetch(hsmEndpoint, fetchOptions);
+            const response: any = await post.json();
           
-          const currentTime: number = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
+            console.log('\nRES:', response);
 
-          // DOM – 08h às 18h00
-          if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00)) {
-            console.log('Time to fire HSM:\n');
-            console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+            channel.ack(message!);
 
-            const qualifiedHsmBody: IQualifiedHSM = {
-              "cod_conta": 6,
-              "hsm": 13,
-              "cod_flow": 62,
-              "tipo_envio": 1,
-              "variaveis": {
-                "1": `${hsmName}` || 'nome',
-              },
-              "contato": {
-                "nome": `${hsmName}` || 'nome',
-                "telefone": `${hsmPhoneNumber}` || '5548999476359',
-              },
-              "start_flow": 1
-            };
+            message = null;  
+          } catch (err) {
+            console.error(err);
+          }
+        }; // end of sunday if
 
-            console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
+        /* SEG a SAB – 08h às 20h40 */
+        if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 20.40) && message) {
+          console.log('Time to fire HSM:\n');
+          console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
 
-            const fetchOptions: RequestInit = {
-              method: 'POST',
-              body: JSON.stringify(qualifiedHsmBody),
-              headers: {
-                'Authorization': process.env.AUTH_TOKEN as string,
-                'Content-Type': 'application/json',
-              },
-            };
+          const qualifiedHsmBody: IQualifiedHSM = {
+            "cod_conta": 6,
+            "hsm": 13,
+            "cod_flow": 62,
+            "tipo_envio": 1,
+            "variaveis": {
+              "1": `${hsmName}` || 'nome',
+            },
+            "contato": {
+              "nome": `${hsmName}` || 'nome',
+              "telefone": `${hsmPhoneNumber}` || '5548999476359',
+            },
+            "start_flow": 1
+          };
 
-            try {
-              const post: FetchResponse = await fetch(hsmEndpoint, fetchOptions);
-              const response: any = await post.json();
-            
-              console.log('\nRES:', response);
+          console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
 
-              channel.ack(message!);
-            } catch (err) {
-              console.error(err);
-            }
-          }; // end of sunday if
+          const fetchOptions: RequestInit = {
+            method: 'POST',
+            body: JSON.stringify(qualifiedHsmBody),
+            headers: {
+              'Authorization': process.env.AUTH_TOKEN as string,
+              'Content-Type': 'application/json',
+            },
+          };
 
-          // SEG a SAB – 08h às 20h40
-          if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 20.40)) {
-            console.log('Time to fire HSM:\n');
-            console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
+          try {
+            const post: FetchResponse = await fetch(hsmEndpoint, fetchOptions);
+            const response: any = await post.json();
+          
+            console.log('\nRES:', response);
 
-            const qualifiedHsmBody: IQualifiedHSM = {
-              "cod_conta": 6,
-              "hsm": 13,
-              "cod_flow": 62,
-              "tipo_envio": 1,
-              "variaveis": {
-                "1": `${hsmName}` || 'nome',
-              },
-              "contato": {
-                "nome": `${hsmName}` || 'nome',
-                "telefone": `${hsmPhoneNumber}` || '5548999476359',
-              },
-              "start_flow": 1
-            };
+            channel.ack(message!);
 
-            console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
-
-            const fetchOptions: RequestInit = {
-              method: 'POST',
-              body: JSON.stringify(qualifiedHsmBody),
-              headers: {
-                'Authorization': process.env.AUTH_TOKEN as string,
-                'Content-Type': 'application/json',
-              },
-            };
-
-            try {
-              const post: FetchResponse = await fetch(hsmEndpoint, fetchOptions);
-              const response: any = await post.json();
-            
-              console.log('\nRES:', response);
-
-              channel.ack(message!);
-            } catch (err) {
-              console.error(err);
-            }
-          }; // end of weekday + saturday if
-        }, 70000); // end of setInterval
+            message = null;    
+          } catch (err) {
+            console.error(err);
+          }
+        }; // end of weekday + saturday if
       } catch (err) {
         console.error(err);
-      }
+      } 
     }); // end of channel.consume
 
     console.log("\nWaiting for messages...\n");
@@ -157,14 +165,3 @@ export async function consumeFromQueue(): Promise<void> {
       console.error(err);
   }
 }; // end of main function consumeFromQueue
-
-
-
-/*
-  For logging purposes:
-    console.log(
-                '\nDate:', currentDate,
-                '\nWeekday:', currentDay,
-                '\nTime:', currentTime, '\n'
-    );
-*/
