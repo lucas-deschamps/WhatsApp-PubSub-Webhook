@@ -20,6 +20,8 @@ app.post('/', async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({ status: 'success', statusCode: 200 });
   } catch (err) {
     console.error(err);
+
+    res.status(500).json({ status: 'failure', statusCode: 500 });
   }
 });
 
