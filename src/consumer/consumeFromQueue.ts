@@ -61,14 +61,8 @@ export async function consumeFromQueue(): Promise<void> {
           
           const currentTime: number = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
 
-          console.log(
-            '\nDate:', currentDate,
-            '\nWeekday:', currentDay,
-            '\nTime:', currentTime, '\n'
-          );
-
           // DOM – 08h às 18h00
-          if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 0.00 && currentTime < 18.00)) {
+          if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00)) {
             console.log('Time to fire HSM:\n');
             console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
 
@@ -82,7 +76,7 @@ export async function consumeFromQueue(): Promise<void> {
               },
               "contato": {
                 "nome": `${hsmName}` || 'nome',
-                "telefone": /*`${hsmPhoneNumber}` ||*/ '5521993165897',
+                "telefone": `${hsmPhoneNumber}` || '5548999476359',
               },
               "start_flow": 1
             };
@@ -103,7 +97,8 @@ export async function consumeFromQueue(): Promise<void> {
               const response: any = await post.json();
             
               console.log('\nRES:', response);
-              console.log('\nsuccess msg:', response?.msg);
+
+              channel.ack(message!);
             } catch (err) {
               console.error(err);
             }
@@ -124,7 +119,7 @@ export async function consumeFromQueue(): Promise<void> {
               },
               "contato": {
                 "nome": `${hsmName}` || 'nome',
-                "telefone": /*`${hsmPhoneNumber}` ||*/ '5521993165897',
+                "telefone": `${hsmPhoneNumber}` || '5548999476359',
               },
               "start_flow": 1
             };
@@ -145,12 +140,13 @@ export async function consumeFromQueue(): Promise<void> {
               const response: any = await post.json();
             
               console.log('\nRES:', response);
-              console.log('\nsuccess msg:', response?.msg);
+
+              channel.ack(message!);
             } catch (err) {
               console.error(err);
             }
           }; // end of weekday + saturday if
-        }, 10000); // end of setInterval
+        }, 70000); // end of setInterval
       } catch (err) {
         console.error(err);
       }
@@ -160,4 +156,15 @@ export async function consumeFromQueue(): Promise<void> {
   } catch (err) {
       console.error(err);
   }
-}; // end of consumeFromQueue
+}; // end of main function consumeFromQueue
+
+
+
+/*
+  For logging purposes:
+    console.log(
+                '\nDate:', currentDate,
+                '\nWeekday:', currentDay,
+                '\nTime:', currentTime, '\n'
+    );
+*/
