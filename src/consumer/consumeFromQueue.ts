@@ -1,4 +1,8 @@
 import amqp from 'amqplib';
+import { config } from 'dotenv';
+
+config();
+
 import { DateTime } from 'luxon';
 import fetch, { Response as FetchResponse, RequestInit } from 'node-fetch';
 
@@ -14,8 +18,8 @@ export async function consumeFromQueue(): Promise<void> {
     const channel = await connection.createChannel();
       
     await channel.assertQueue('AV');
-      
-    channel.consume('AV', message => {
+    
+    channel.consume('AV', async (message) => {
       try {
 	      const lead: ILead = message && JSON.parse(message.content.toString('utf8'));
 
@@ -46,7 +50,8 @@ export async function consumeFromQueue(): Promise<void> {
 
         console.log('Lead info finished.\n');
 
-        setInterval(() => {
+        // periodical check on whether it's been 5 days since the new lead was registered
+        setInterval(async () => {
           const currentNow = DateTime.now().setZone('America/Sao_Paulo');
 
           const currentDate = currentNow.toISO();
@@ -63,7 +68,7 @@ export async function consumeFromQueue(): Promise<void> {
           );
 
           // DOM – 08h às 18h00
-          if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 8.00 && currentTime < 18.00)) {
+          if (currentDay === 7 && currentDate >= leadDatePlusFive && (currentTime >= 0.00 && currentTime < 18.00)) {
             console.log('Time to fire HSM:\n');
             console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
 
@@ -77,16 +82,35 @@ export async function consumeFromQueue(): Promise<void> {
               },
               "contato": {
                 "nome": `${hsmName}` || 'nome',
-                "telefone": `${hsmPhoneNumber}` || '5548999476359',
+                "telefone": /*`${hsmPhoneNumber}` ||*/ '5521993165897',
               },
               "start_flow": 1
             };
 
             console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
-          };
+
+            const fetchOptions: RequestInit = {
+              method: 'POST',
+              body: JSON.stringify(qualifiedHsmBody),
+              headers: {
+                'Authorization': process.env.AUTH_TOKEN as string,
+                'Content-Type': 'application/json',
+              },
+            };
+
+            try {
+              const post: FetchResponse = await fetch(hsmEndpoint, fetchOptions);
+              const response: any = await post.json();
+            
+              console.log('\nRES:', response);
+              console.log('\nsuccess msg:', response?.msg);
+            } catch (err) {
+              console.error(err);
+            }
+          }; // end of sunday if
 
           // SEG a SAB – 08h às 20h40
-          if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 22.40)) {
+          if (currentDate >= leadDatePlusFive && currentDay !== 7 && (currentTime >= 8.00 && currentTime < 20.40)) {
             console.log('Time to fire HSM:\n');
             console.log(currentDate, ' >= (lead register date +5)', leadDatePlusFive);
 
@@ -100,84 +124,40 @@ export async function consumeFromQueue(): Promise<void> {
               },
               "contato": {
                 "nome": `${hsmName}` || 'nome',
-                "telefone": `${hsmPhoneNumber}` || '5548999476359',
+                "telefone": /*`${hsmPhoneNumber}` ||*/ '5521993165897',
               },
               "start_flow": 1
             };
 
             console.log('\nHSM API post body:', qualifiedHsmBody, '\n');
-          };
 
-        }, 6000);
-        
-        //channel.ack(lead);
+            const fetchOptions: RequestInit = {
+              method: 'POST',
+              body: JSON.stringify(qualifiedHsmBody),
+              headers: {
+                'Authorization': process.env.AUTH_TOKEN as string,
+                'Content-Type': 'application/json',
+              },
+            };
+
+            try {
+              const post: FetchResponse = await fetch(hsmEndpoint, fetchOptions);
+              const response: any = await post.json();
+            
+              console.log('\nRES:', response);
+              console.log('\nsuccess msg:', response?.msg);
+            } catch (err) {
+              console.error(err);
+            }
+          }; // end of weekday + saturday if
+        }, 10000); // end of setInterval
       } catch (err) {
         console.error(err);
       }
-    });
+    }); // end of channel.consume
 
     console.log("\nWaiting for messages...\n");
   } catch (err) {
       console.error(err);
   }
-}
-
-
-
-/*
-  const currentDate = DateTime.now().setZone('America/Sao_Paulo').toISO();
-  const currentPlusFive = DateTime.now().setZone('America/Sao_Paulo').plus({ days: 5 }).toISO();
-
-  console.log('\n== DATE:', currentDate, ' ==');
-  console.log('\n== FIVE:', currentPlusFive, ' ==');
-
-  const currentDay: number = DateTime.now().setZone('America/Sao_Paulo').weekday;
-  
-  const currentHour: number = DateTime.now().setZone('America/Sao_Paulo').hour;
-  const currentMinute: number = DateTime.now().setZone('America/Sao_Paulo').minute;
-
-  const currentTime: number = parseFloat(`${currentHour}.${(currentMinute < 10) ? '0' + currentMinute : currentMinute}`);
-
-  console.log('\n== DAY:', currentDay, ' ==');
-  console.log('\n== TIME:', currentTime, ' ==');
-*/
-
-
-/*
-const qualifiedBody = {
-  "cod_conta": 6,
-  "hsm": 13,
-  "cod_flow": 62,
-  "tipo_envio": 1,
-  "variaveis": {
-    "1": `${hsmName}` || 'nome',
-  },
-  "contato": {
-    "nome": `${hsmName}` || 'nome',
-    "telefone": `${hsmPhoneNumber}` || '5548999476359',
-  },
-  "start_flow": 1
-};
-
-const postOptions: RequestInit = {
-  method: 'POST',
-  body: JSON.stringify(qualifiedBody),
-  headers: {
-    'Authorization': JSON.stringify(process.env.AUTH_TOKEN),
-    'Content-Type': 'application/json',
-  },
-};
-
-try {
-  const post: FetchResponse = await fetch(hsmEndpoint, postOptions);
-  const response: any = await post.json();
-
-  console.log('\nsuccess msg:', response?.msg);
-
-  res.status(200).json({ status: 'success', statusCode: 200 });
-} catch (err) {
-  console.error(err);
-
-  res.status(500).json({ status: 'failure', statusCode: 500 });
-};
-*/
+}; // end of consumeFromQueue
