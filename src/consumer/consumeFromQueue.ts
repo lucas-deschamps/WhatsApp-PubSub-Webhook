@@ -21,7 +21,7 @@ export async function consumeFromQueue(): Promise<void> {
     
     channel.consume('AV', async (message) => {
       try {
-	      const lead: ILead = message && JSON.parse(message.content.toString('utf8'));
+	const lead: ILead = message && JSON.parse(message.content.toString('utf8'));
 
         const {
           idlead,
