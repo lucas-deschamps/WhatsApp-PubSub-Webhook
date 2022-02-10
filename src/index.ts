@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import express, { Request, Response } from 'express';
 
 import { publishToQueue } from './publisher/publishToQueue';
@@ -11,6 +12,10 @@ const port = process.env.PORT || 3333;
 
 app.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
+    const nowPlusFiveDays = DateTime.now().setZone('America/Sao_Paulo').plus({ days: 5 }).toISO();
+
+    req.body.fireHSM = nowPlusFiveDays;
+
     publishToQueue(req.body);
 
     console.log('INCOMING REQUEST:', req.body, '\n');

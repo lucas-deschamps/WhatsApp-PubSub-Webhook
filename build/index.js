@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import express from 'express';
 import { publishToQueue } from './publisher/publishToQueue';
 import { consumeFromQueue } from './consumer/consumeFromQueue';
@@ -6,6 +7,8 @@ app.use(express.json());
 const port = process.env.PORT || 3333;
 app.post('/', async (req, res) => {
     try {
+        const nowPlusFiveDays = DateTime.now().setZone('America/Sao_Paulo').plus({ days: 5 }).toISO();
+        req.body.fireHSM = nowPlusFiveDays;
         publishToQueue(req.body);
         console.log('INCOMING REQUEST:', req.body, '\n');
         console.log('\nRequest finished.\n');

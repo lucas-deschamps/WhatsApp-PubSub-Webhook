@@ -87,4 +87,5 @@ export interface ILead {
   interacao?: Array<Interacao>,
   tarefa?: Array<Tarefa>,
   autor_ultima_alteracao?: string,
+  fireHSM?: string,
 }
