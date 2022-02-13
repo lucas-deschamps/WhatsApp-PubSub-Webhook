@@ -1,6 +1,4 @@
 import amqp from 'amqplib';
-import { config } from 'dotenv';
-config();
 import { DateTime } from 'luxon';
 import { amqpServer } from '../config/connections';
 import sendHSM from './sendQualifiedHSM';
